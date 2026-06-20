@@ -169,6 +169,8 @@ class EquityCalculator:
             else:
                 # Fallback to monte carlo if random villains exist (combination space too huge)
                 mode = "monte_carlo"
+                if iterations <= 0:
+                    iterations = 10000
                 
         if mode == "monte_carlo":
             for _ in range(iterations):
@@ -222,7 +224,7 @@ class EquityCalculator:
 
 if __name__ == "__main__":
     # Simple test for evaluation correctness
-    assert evaluate_seven(["As","Ah","Kd","Ks","Qh","Jc","Tc"])[0] == 6 # Full House
+    assert evaluate_seven(["As","Ah","Ad","Ks","Kh","Jc","Tc"])[0] == 6 # Full House
     
     # Simple test for equity calculation
     calc = EquityCalculator()

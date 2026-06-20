@@ -35,6 +35,23 @@ class OverlayWindow:
         self.board_label = tk.Label(self.root, text="Board: ", fg="white", bg="black", font=font_style)
         self.board_label.pack(anchor="w", padx=10)
         
+        # Frame for Villains selection
+        self.on_villains_change = None
+        villains_frame = tk.Frame(self.root, bg="black")
+        villains_frame.pack(anchor="w", padx=10, pady=(5, 5))
+        
+        tk.Label(villains_frame, text="Opponents: ", fg="#aeaeae", bg="black", font=("Consolas", 10, "bold")).pack(side="left")
+        
+        self.dec_btn = tk.Button(villains_frame, text="-", command=self.dec_villains, bg="#2c2c2e", fg="white", bd=0, width=2, font=("Consolas", 9, "bold"))
+        self.dec_btn.pack(side="left", padx=2)
+        
+        self.villains_var = tk.IntVar(value=1)
+        self.villains_label = tk.Label(villains_frame, text="1", fg="#30d158", bg="black", font=("Consolas", 10, "bold"), width=2)
+        self.villains_label.pack(side="left")
+        
+        self.inc_btn = tk.Button(villains_frame, text="+", command=self.inc_villains, bg="#2c2c2e", fg="white", bd=0, width=2, font=("Consolas", 9, "bold"))
+        self.inc_btn.pack(side="left", padx=2)
+        
         self.equity_label = tk.Label(self.root, text="Win: --.-% | Tie: --.-%", fg="#FFD700", bg="black", font=("Consolas", 16, "bold"))
         self.equity_label.pack(anchor="w", padx=10, pady=(0, 10))
         
@@ -90,6 +107,24 @@ class OverlayWindow:
             self.equity_label.config(text=f"Win: {equity:.1f}% | Tie: {tie:.1f}%")
         else:
             self.equity_label.config(text="Calculating...")
+
+    def dec_villains(self):
+        val = self.villains_var.get()
+        if val > 1:
+            self.villains_var.set(val - 1)
+            self.villains_label.config(text=str(val - 1))
+            self.on_villains_change_internal()
+
+    def inc_villains(self):
+        val = self.villains_var.get()
+        if val < 9:
+            self.villains_var.set(val + 1)
+            self.villains_label.config(text=str(val + 1))
+            self.on_villains_change_internal()
+
+    def on_villains_change_internal(self):
+        if self.on_villains_change:
+            self.on_villains_change(self.villains_var.get())
 
     def close(self):
         self.root.destroy()

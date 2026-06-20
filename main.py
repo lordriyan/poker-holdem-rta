@@ -37,7 +37,9 @@ class PokerBot:
         # Components
         self.detector = CardDetector(threshold=self.threshold, split_ratio=self.split_ratio)
         self.calculator = EquityCalculator()
+        self.num_villains = 1
         self.overlay = OverlayWindow()
+        self.overlay.on_villains_change = self.on_villains_change
         
     def load_config(self):
         try:
@@ -46,6 +48,10 @@ class PokerBot:
         except FileNotFoundError:
             logging.error("[ERROR] config.json not found. Run with --roi to create one.")
             return {"rois": {}, "threshold": 0.85}
+
+    def on_villains_change(self, val):
+        self.num_villains = val
+        self.needs_recalc = True
 
     def detection_loop(self):
         if self.debug_mode:
@@ -125,11 +131,12 @@ class PokerBot:
                     # If board is full or almost full, exhaustive is fast.
                     # Preflop -> monte carlo
                     mode = "exhaustive" if len(board_cards) >= 3 else "monte_carlo"
-                    iterations = 10000 if mode == "monte_carlo" else 0
+                    iterations = 10000
                     
                     try:
                         # Allow max 0.2s for calculations to stay responsive
-                        res = self.calculator._calculate([hero_cards], board_cards, mode=mode, iterations=iterations, max_time=0.2)
+                        players = [hero_cards] + [[]] * self.num_villains
+                        res = self.calculator._calculate(players, board_cards, mode=mode, iterations=iterations, max_time=0.2)
                         self.equity_result = {"hero": res["hero"], "tie": res["tie"]}
                     except Exception as e:
                         logging.error(f"[ERROR] Error calculating equity: {e}")
