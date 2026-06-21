@@ -1,3 +1,4 @@
+import sys
 import tkinter as tk
 import mss
 import json
@@ -7,8 +8,39 @@ import numpy as np
 from PIL import Image, ImageTk
 from detector import rotate_image
 
+# Make Tkinter DPI-aware on Windows to prevent coordinate scaling / shifting issues
+if sys.platform.startswith("win"):
+    try:
+        import ctypes
+        ctypes.windll.shcore.SetProcessDpiAwareness(2) # Per-monitor DPI aware
+    except Exception:
+        try:
+            ctypes.windll.user32.SetProcessDPIAware() # Fallback for Windows 7/8
+        except Exception:
+            pass
+
 CONFIG_FILE = "config.json"
 ROI_KEYS = ["hero1", "hero2", "flop1", "flop2", "flop3", "turn", "river"]
+
+def is_inside_rotated_rect(px, py, x, y, w, h, angle_degrees):
+    if w <= 0 or h <= 0:
+        return False
+    cx = x + w / 2
+    cy = y + h / 2
+    dx = px - cx
+    dy = py - cy
+    
+    import math
+    rad = math.radians(angle_degrees)
+    cos_a = math.cos(rad)
+    sin_a = math.sin(rad)
+    
+    # Rotate point back by -angle
+    rx = dx * cos_a + dy * sin_a
+    ry = -dx * sin_a + dy * cos_a
+    
+    return abs(rx) <= w / 2 and abs(ry) <= h / 2
+
 
 def get_rotated_rect_points(x, y, w, h, angle_degrees):
     cx = x + w / 2
@@ -347,33 +379,54 @@ class ROIEditor:
         self.start_x = event.x
         self.start_y = event.y
         
-        key = self.current_key.get()
-        info = self.rois.get(key, {"bbox": [0, 0, 0, 0], "rotation": 0})
-        x, y, w, h = info["bbox"]
+        # Check if the click is inside any ROI
+        clicked_key = None
         
-        self.mode = "draw"
-        if w > 0 and h > 0:
-            # Check if click is inside the currently selected ROI
-            if x <= event.x <= x + w and y <= event.y <= y + h:
-                self.mode = "move"
-                self.orig_x = x
-                self.orig_y = y
-                # Hide all to show only the moving one
-                self.canvas.delete("roi_rect")
-                self.canvas.delete("roi_text")
+        # Prioritize the currently selected ROI
+        curr_key = self.current_key.get()
+        curr_info = self.rois.get(curr_key, None)
+        if curr_info:
+            x, y, w, h = curr_info["bbox"]
+            rot = curr_info["rotation"]
+            if is_inside_rotated_rect(event.x, event.y, x, y, w, h, rot):
+                clicked_key = curr_key
                 
-                rotation = info["rotation"]
-                points = get_rotated_rect_points(x, y, w, h, rotation)
-                self.rect_id = self.canvas.create_polygon(points, fill='', outline="#00FF00", width=3)
-                
-                split_points = get_rotated_split_line_points(x, y, w, h, self.split_ratio.get(), rotation)
-                self.line_id = self.canvas.create_line(split_points, fill="#00FF00", dash=(4,4), width=2)
-                return
-                
-        # Draw mode: initial size 0, rotation 0
-        points = get_rotated_rect_points(self.start_x, self.start_y, 0, 0, 0)
-        self.rect_id = self.canvas.create_polygon(points, fill='', outline="#00FF00", width=3)
-        self.line_id = self.canvas.create_line(self.start_x, self.start_y, self.start_x, self.start_y, fill="#00FF00", dash=(4,4), width=2)
+        # If not in the current ROI, check other ROIs
+        if not clicked_key:
+            for key, info in self.rois.items():
+                if key == curr_key:
+                    continue
+                x, y, w, h = info["bbox"]
+                rot = info["rotation"]
+                if is_inside_rotated_rect(event.x, event.y, x, y, w, h, rot):
+                    clicked_key = key
+                    break
+                    
+        if clicked_key:
+            # Select this ROI and enter move mode
+            self.current_key.set(clicked_key)
+            self.mode = "move"
+            info = self.rois[clicked_key]
+            x, y, w, h = info["bbox"]
+            self.orig_x = x
+            self.orig_y = y
+            
+            # Hide all to show only the moving one
+            self.canvas.delete("roi_rect")
+            self.canvas.delete("roi_text")
+            
+            rotation = info["rotation"]
+            points = get_rotated_rect_points(x, y, w, h, rotation)
+            self.rect_id = self.canvas.create_polygon(points, fill='', outline="#00FF00", width=3)
+            
+            split_points = get_rotated_split_line_points(x, y, w, h, self.split_ratio.get(), rotation)
+            self.line_id = self.canvas.create_line(split_points, fill="#00FF00", dash=(4,4), width=2)
+        else:
+            # Draw mode: initial size 0, rotation 0 for currently selected key
+            self.mode = "draw"
+            points = get_rotated_rect_points(self.start_x, self.start_y, 0, 0, 0)
+            self.rect_id = self.canvas.create_polygon(points, fill='', outline="#00FF00", width=3)
+            self.line_id = self.canvas.create_line(self.start_x, self.start_y, self.start_x, self.start_y, fill="#00FF00", dash=(4,4), width=2)
         
     def on_drag(self, event):
         if getattr(self, 'mode', 'draw') == "move":

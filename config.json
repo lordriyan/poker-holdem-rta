@@ -1,69 +1,69 @@
 {
-    "threshold": 0.85,
+    "threshold": 0.75,
     "rois": {
         "hero1": {
             "bbox": [
                 1049,
-                743,
-                59,
-                98
+                739,
+                57,
+                92
             ],
             "rotation": -2
         },
         "hero2": {
             "bbox": [
                 1128,
-                736,
-                47,
-                95
+                733,
+                44,
+                94
             ],
             "rotation": 11
         },
         "flop1": {
             "bbox": [
-                721,
-                473,
-                42,
-                64
+                722,
+                471,
+                39,
+                59
             ],
-            "rotation": 3
+            "rotation": 0
         },
         "flop2": {
             "bbox": [
-                822,
-                473,
-                36,
-                62
+                820,
+                472,
+                39,
+                60
             ],
-            "rotation": 2
+            "rotation": 0
         },
         "flop3": {
             "bbox": [
-                918,
+                920,
                 473,
-                42,
-                62
+                33,
+                61
             ],
             "rotation": 0
         },
         "turn": {
             "bbox": [
                 1017,
-                472,
-                41,
-                64
+                471,
+                38,
+                63
             ],
             "rotation": 0
         },
         "river": {
             "bbox": [
-                1114,
-                473,
-                44,
+                1115,
+                472,
+                39,
                 65
             ],
-            "rotation": -3
+            "rotation": 0
         }
     },
-    "split_ratio": 0.55
+    "split_ratio": 0.6
 }
